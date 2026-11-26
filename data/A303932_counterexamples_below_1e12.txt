@@ -1,0 +1,8 @@
+# OEIS A303932: even numbers 2n < 10^12 with no representation p + 2^k + 3^m (k, m >= 0, p prime)
+# Conjecture 1 (11 a quadratic residue mod p; p = 2 counts, p = 11 does not, and the list is the same if it does)
+257558146370
+749360555468
+799324864730
+# Conjecture 2 (11 a quadratic non-residue mod p)
+68211369278
+273299806988
