@@ -93,12 +93,12 @@ computation, so a passing check is a proof.
   pairs itself and checks every row with integer arithmetic alone. `verify.py` also recounts
   with a deterministic Miller-Rabin test (0 representations for N, 51 and 43 for N − 2 and
   N + 2) and checks its counting function against the 60 terms of A157242 printed in the OEIS.
-* **Lean.** [`lean/SunA303932.lean`](lean/SunA303932.lean) proves the failure of A303932,
-  Conjecture 2, at 2n = 68211369278 in Lean 4, using only the core library. The repository's
-  GitHub Actions workflow runs the Lean kernel on it (Lean 4.36.0 at the time of writing);
-  the theorem depends on the axioms `propext` and `Quot.sound` only, with no `sorry` and no
-  `native_decide`. [`lean/SunA157242.lean`](lean/SunA157242.lean) is the same kind of proof
-  for the A157242 counterexample, and the workflow runs the Lean kernel on it too.
+* **Lean.** [`lean/SunA157242.lean`](lean/SunA157242.lean) proves in Lean 4, using only the
+  core library, that 107576474238337 has no representation, and hence that the conjecture of
+  A157242 is false. [`lean/SunA303932.lean`](lean/SunA303932.lean) does the same for A303932,
+  Conjecture 2, at 2n = 68211369278. The repository's GitHub Actions workflow runs the Lean
+  kernel on both files (Lean 4.36.0 at the time of writing). Each final theorem depends on the
+  axioms `propext` and `Quot.sound` only, with no `sorry` and no `native_decide`.
 
 ## How the numbers were found
 
