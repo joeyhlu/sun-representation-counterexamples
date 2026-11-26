@@ -17,9 +17,10 @@ jobs:
       - run: python verify.py --quick
       - run: for N in 68211369278 273299806988; do python check_cert_a303932.py $N certificates/A303932_conj2_N$N.csv nr; done
       - run: for N in 257558146370 749360555468 799324864730; do python check_cert_a303932.py $N certificates/A303932_conj1_N$N.csv qr; done
+      - run: python check_cert_a157242.py certificates/A157242_N107576474238337.csv
 
   lean:
-    name: Check the Lean proof (A303932, Conjecture 2)
+    name: Check the Lean proofs (A157242 and A303932, Conjecture 2)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,10 +28,15 @@ jobs:
         run: |
           curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-      - name: Check that the Lean file matches the certificate
+      - name: Check that the Lean files match the certificates
         run: |
           python lean/gen_lean.py certificates/A303932_conj2_N68211369278.csv /tmp/regen.lean
           diff /tmp/regen.lean lean/SunA303932.lean
-      - name: Lean kernel check
+          python lean/gen_lean_a157242.py certificates/A157242_N107576474238337.csv /tmp/regen2.lean
+          diff /tmp/regen2.lean lean/SunA157242.lean
+      - name: Lean kernel check (A303932, Conjecture 2)
         working-directory: lean
         run: lean SunA303932.lean
+      - name: Lean kernel check (A157242)
+        working-directory: lean
+        run: lean SunA157242.lean

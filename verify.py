@@ -13,8 +13,9 @@ Membership tests used
   x^2 + 2y^2                 : plain search (default) and, independently, the classical
                                criterion "every prime == 5 or 7 (mod 8) divides m to an even
                                power" (Z[sqrt(-2)] is a principal ideal domain).
-  primes                     : explicit divisors / explicit square roots of 11 from the
-                               certificate file, so no primality test is trusted.
+  primes                     : explicit divisors (and, for A303932, square roots of 11) from the
+                               certificate files, so no primality test is trusted; a
+                               deterministic Miller-Rabin test is used for recounts only.
 """
 import sys
 from math import isqrt
@@ -225,6 +226,50 @@ def recount_a303932(N):
     return primes, res, nonres
 
 
+# ---------------------------------------------------------------- A157242: p + 2^x + 11*2^y, p == 5 (mod 6)
+def pairs_p2k(N, k):
+    """All (x, y) with x, y >= 1 and 2^x + k*2^y < N."""
+    out = []
+    y = 1
+    while k * 2 ** y < N:
+        x = 1
+        while 2 ** x + k * 2 ** y < N:
+            out.append((x, y))
+            x += 1
+        y += 1
+    return out
+
+
+def count_a157242(N, k=11, c=5):
+    """Number of (x, y), x, y >= 1, such that N - 2^x - k*2^y is a prime congruent to c mod 6."""
+    cnt = 0
+    for x, y in pairs_p2k(N, k):
+        p = N - 2 ** x - k * 2 ** y
+        if p % 6 == c and is_prime(p):
+            cnt += 1
+    return cnt
+
+
+def check_cert_a157242(N, path, k=11, c=5):
+    """Every pair (x, y) is listed; p is in the wrong class mod 6 or has an explicit proper divisor."""
+    cert = {}
+    for line in open(path):
+        if line.startswith("#") or line.startswith("x,"):
+            continue
+        x, y, p, pm, d = map(int, line.split(","))
+        cert[(x, y)] = (p, pm, d)
+    need = pairs_p2k(N, k)
+    assert set(need) == set(cert) and len(need) == len(cert)
+    inclass = 0
+    for (x, y) in need:
+        p, pm, d = cert[(x, y)]
+        assert p == N - 2 ** x - k * 2 ** y and p >= 1 and pm == p % 6
+        if pm == c:
+            inclass += 1
+            assert p == 1 or (1 < d < p and p % d == 0)
+    return len(need), inclass
+
+
 OK = True
 
 
@@ -236,6 +281,36 @@ def report(label, n, value, expect_zero=True, extra=""):
 
 
 def main():
+    global OK
+    print("A157242  odd N = p + 2^x + 11*2^y, p prime, p == 5 (mod 6), x, y >= 1"
+          "  (conjectured for all odd N > 28 except 33, 39, 45, 171, 247)")
+    oeis = [0] * 14 + [1, 1, 0, 2, 1, 0, 2, 2, 0, 2, 2, 1, 3, 2, 2, 3, 1, 2, 4, 2, 2, 5, 1, 2, 5, 2, 2, 4, 2, 2,
+                       3, 2, 3, 4, 4, 3, 6, 2, 3, 6, 5, 1, 7, 4, 2, 6]
+    same = [count_a157242(2 * n - 1) for n in range(1, 61)] == oeis
+    OK &= same
+    print("%-4s the count function reproduces the 60 terms a(1..60) of A157242 given in the OEIS" % ("PASS" if same else "FAIL"))
+    top = 2001 if QUICK else 20001
+    zeros = [N for N in range(29, top + 1, 2) if count_a157242(N) == 0]
+    good = zeros == [33, 39, 45, 171, 247]
+    OK &= good
+    print("%-4s odd N in (28, %d] with no representation: %s" % ("PASS" if good else "FAIL", top, zeros))
+    N = 107576474238337
+    pairs, inclass = check_cert_a157242(N, "certificates/A157242_N%d.csv" % N)
+    print("PASS certificate (N = %d): all %d pairs (x, y) covered; %d have p == 5 (mod 6), each with an explicit proper divisor"
+          % (N, pairs, inclass))
+    report("A157242 (recount)", N, count_a157242(N), extra="of %d pairs (x, y)" % pairs)
+    for M in (N - 2, N + 2):
+        report("  control (neighbour)", M, count_a157242(M), expect_zero=False)
+    print("Same form, other cases: k = 11 with p == 1 (mod 6) (A157237, open), and k = 7 (exceptions found by D. S. McNeil in 2009, and one more)")
+    zeros = [M for M in range(31, top + 1, 2) if count_a157242(M, 11, 1) == 0]
+    good = zeros == [35, 41, 47, 101, 167, 2021][:5 if QUICK else 6]
+    OK &= good
+    print("%-4s k=11, p == 1 (mod 6): odd N in (30, %d] with no representation: %s" % ("PASS" if good else "FAIL", top, zeros))
+    report("k=11, p == 1 (mod 6)", 119171, count_a157242(119171, 11, 1))
+    report("k=7,  p == 1 (mod 6)", 445466268731, count_a157242(445466268731, 7, 1))
+    for M in (1433987797, 45483661477, 85305551767, 367084269651, 1572650032347):
+        report("k=7,  p == 5 (mod 6)", M, count_a157242(M, 7, 5))
+
     A302984 = [4375339279, 6285378879, 8525602079, 9731038079, 13523100479, 24920030079, 29312698479,
                30034054079, 32269674879, 40072842719, 51729946479, 58532818879, 67179857279, 71235478079,
                72161342879, 82358435279, 85090270079, 91924062079]

@@ -3,6 +3,41 @@
 Draft comments for the COMMENTS sections of the entries concerned. The OEIS appends the
 contributor's signature and date (`~~~~`).
 
+## A157242
+
+```
+The conjecture is false: a(53788237119169) = 0, that is, the odd number 107576474238337 = 13*43*2129*7411*12197 is not of the form p + 2^x + 11*2^y with p a prime congruent to 5 mod 6 and x, y positive integers. Among the 1974 pairs (x,y) with 2^x + 11*2^y < 107576474238337, p = 107576474238337 - 2^x - 11*2^y is congruent to 5 mod 6 exactly for the 504 pairs with x even and y odd, and all 504 values are composite. There is no other counterexample below 10^13 (this agrees with D. S. McNeil's verification up to 10^13 reported in Sun's message to the Number Theory List of Feb 28 2009). - ~~~~
+```
+
+Suggested LINKS line:
+
+```
+Zhi-Wei Sun, <a href="https://listserv.nodak.edu/cgi-bin/wa.exe?A2=NMBRTHRY;20d0ba9.0902">A curious conjecture about p+2^x+11*2^y</a>, Number Theory List, Feb 25 2009.
+```
+
+Whether 107576474238337 is the least counterexample is not settled in the comment above; add
+that only once the test of all odd numbers between 10^13 and 107576474238337 has finished
+(see the README).
+
+## A157237
+
+```
+There is no counterexample to the conjecture below 10^13. - ~~~~
+```
+
+## A157218 and A157225 (k = 7), for the record
+
+Neither entry mentions that the statements Sun first considered for k = 7 fail. Sun's message
+of Feb 25 2009 credits the counterexamples to D. S. McNeil.
+
+```
+A157218: The odd number 445466268731 is not of the form p + 2^x + 7*2^y with p a prime congruent to 1 mod 6 and x, y positive integers (D. S. McNeil, 2009, see Sun's message to the Number Theory List of Feb 25 2009); it is the only odd number in (33, 10^13) with this property. - ~~~~
+```
+
+```
+A157225: The odd numbers greater than 1983 and less than 10^13 that are not of the form p + 2^x + 7*2^y with p a prime congruent to 5 mod 6 and x, y positive integers are 1433987797, 45483661477, 85305551767, 367084269651 (D. S. McNeil, 2009, see Sun's message to the Number Theory List of Feb 25 2009) and 1572650032347. - ~~~~
+```
+
 ## A302984
 
 ```
