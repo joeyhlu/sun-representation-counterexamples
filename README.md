@@ -42,7 +42,9 @@ computation, so a passing check is a proof.
   integer arithmetic alone and trusts no primality test.
 * **Lean.** [`lean/SunA303932.lean`](lean/SunA303932.lean) proves the failure of A303932,
   Conjecture 2, at 2n = 68211369278 in Lean 4, using only the core library. The repository's
-  GitHub Actions workflow runs the Lean kernel on it.
+  GitHub Actions workflow runs the Lean kernel on it (Lean 4.36.0 at the time of writing);
+  the theorem depends on the axioms `propext` and `Quot.sound` only, with no `sorry` and no
+  `native_decide`.
 
 ## How the numbers were found
 
