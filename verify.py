@@ -2,7 +2,7 @@
 """Re-check every counterexample in this repository.  Python 3 standard library only.
 
     python verify.py            all checks, a few minutes
-    python verify.py --quick    skip the slow brute-force cross-checks (about 20 seconds)
+    python verify.py --quick    skip the slow brute-force cross-checks (about a minute)
 
 Each check enumerates ALL admissible choices of the "sparse" terms (powers of 2, 3, ...) and
 shows that what is left over is never of the required shape.  For the forms below this is a
@@ -16,9 +16,15 @@ Membership tests used
   primes                     : explicit divisors (and, for A303932, square roots of 11) from the
                                certificate files, so no primality test is trusted; a
                                deterministic Miller-Rabin test is used for recounts only.
+  x^2 + y^2 (A300510,        : the certificate files give, for every number, a divisor d == 3
+  A300448) and x^2 + 2y^2      (mod 4), respectively d == 5 or 7 (mod 8), coprime to its
+  (A301452)                    cofactor, which needs no primality test; the recounts factor
+                               every number completely (Miller-Rabin and Pollard's rho) and use
+                               the criterion "every prime == 3 (mod 4), respectively == 5 or 7
+                               (mod 8), divides v to an even power".
 """
 import sys
-from math import isqrt
+from math import gcd, isqrt
 
 QUICK = "--quick" in sys.argv
 
@@ -57,10 +63,11 @@ def small_primes(limit=22000):
 
 
 def is_prime(n):
-    """Deterministic Miller-Rabin, valid for n < 3.3e24."""
+    """Deterministic Miller-Rabin with the first 13 primes as bases, valid for n < 3.3e24
+    (Sorenson and Webster, 2017)."""
     if n < 2:
         return False
-    bases = (2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37)
+    bases = (2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41)
     for q in bases:
         if n % q == 0:
             return n == q
@@ -270,6 +277,135 @@ def check_cert_a157242(N, path, k=11, c=5):
     return len(need), inclass
 
 
+# ---------------------------------------------------------------- squares minus m*4^k (A300510, A300448)
+_FACTORS = {}
+
+
+def _rho(n):
+    """A proper factor of the odd composite n (Pollard's rho with fixed starting values)."""
+    c = 1
+    while True:
+        x = y = 2
+        g = 1
+        while g == 1:
+            x = (x * x + c) % n
+            y = (y * y + c) % n
+            y = (y * y + c) % n
+            g = gcd(abs(x - y), n)
+        if g != n:
+            return g
+        c += 1
+
+
+def factorize(n):
+    """dict prime -> exponent for 0 < n < 3.3e24 (trial division, Miller-Rabin, Pollard's rho)."""
+    if n in _FACTORS:
+        return _FACTORS[n]
+    out, m = {}, n
+    for q in small_primes():
+        if q * q > m:
+            break
+        while m % q == 0:
+            out[q] = out.get(q, 0) + 1
+            m //= q
+    stack = [m] if m > 1 else []
+    while stack:
+        t = stack.pop()
+        if is_prime(t):
+            out[t] = out.get(t, 0) + 1
+        else:
+            d = _rho(t)
+            stack += [d, t // d]
+    _FACTORS[n] = out
+    return out
+
+
+def bad_prime(q, form):
+    """The primes that must divide a number x^2 + y^2 (form 1) or x^2 + 2y^2 (form 2) to an even power."""
+    return q % 4 == 3 if form == 1 else q % 8 in (5, 7)
+
+
+def represented(v, form=1):
+    """Is v >= 0 of the form x^2 + y^2 (form 1) or x^2 + 2y^2 (form 2)?  Prime criterion."""
+    if v == 0:
+        return True
+    return all(e % 2 == 0 for q, e in factorize(v).items() if q != 2 and bad_prime(q, form))
+
+
+def sq_values(n, mults):
+    """All v = n^2 - m*4^k with m in mults, k >= 0 and m*4^k <= n^2."""
+    out = []
+    for m in mults:
+        t = m
+        while t <= n * n:
+            out.append(n * n - t)
+            t *= 4
+    return out
+
+
+def count_sq(n, mults, form=1):
+    """(number of represented values, number of values)"""
+    vs = sq_values(n, mults)
+    return sum(represented(v, form) for v in vs), len(vs)
+
+
+def ways_x_le_y(v):
+    """Number of (x, y) with 0 <= x <= y and x^2 + y^2 = v, by plain search (small v)."""
+    c, x = 0, 0
+    while 2 * x * x <= v:
+        if is_square(v - x * x):
+            c += 1
+        x += 1
+    return c
+
+
+def ways_from_factors(v):
+    """The same number for v > 0 from the factorization: (r + s) / 2, where r is the product of e + 1
+    over the primes == 1 (mod 4), or 0 if some prime == 3 (mod 4) has an odd exponent, and s = 1 if v
+    is a square or twice a square, else 0."""
+    f = factorize(v)
+    if any(e % 2 for q, e in f.items() if q % 4 == 3):
+        return 0
+    r = 1
+    for q, e in f.items():
+        if q % 4 == 1:
+            r *= e + 1
+    return (r + (1 if is_square(v) or (v % 2 == 0 and is_square(v // 2)) else 0)) // 2
+
+
+def ways_x2_2y2(v):
+    """Number of (x, y) with x, y >= 0 and x^2 + 2y^2 = v, by plain search (small v)."""
+    c, y = 0, 0
+    while 2 * y * y <= v:
+        if is_square(v - 2 * y * y):
+            c += 1
+        y += 1
+    return c
+
+
+def check_cert_squares(n, mults, path, form=1):
+    """One row m,k,v,d for every pair (m, k) with m*4^k < n^2: v = n^2 - m*4^k, d odd, d | v,
+    gcd(d, v/d) = 1 and d == 3 (mod 4) (form 1) or d == 5, 7 (mod 8) (form 2).  No primality test."""
+    need = {}
+    for m in mults:
+        k = 0
+        while m * 4 ** k < n * n:
+            need[(m, k)] = n * n - m * 4 ** k
+            k += 1
+    seen = set()
+    for line in open(path):
+        parts = line.strip().split(",")
+        if len(parts) != 4 or not parts[0].isdigit():
+            continue
+        m, k, v, d = (int(t) for t in parts)
+        assert (m, k) in need and (m, k) not in seen and v == need[(m, k)]
+        assert d > 1 and d % 2 == 1 and v % d == 0 and gcd(d, v // d) == 1
+        assert bad_prime(d, form)
+        seen.add((m, k))
+    assert seen == set(need)
+    return len(need)
+
+
 OK = True
 
 
@@ -310,6 +446,108 @@ def main():
     report("k=7,  p == 1 (mod 6)", 445466268731, count_a157242(445466268731, 7, 1))
     for M in (1433987797, 45483661477, 85305551767, 367084269651, 1572650032347):
         report("k=7,  p == 5 (mod 6)", M, count_a157242(M, 7, 5))
+
+    print("A300510 / A300448  for every n > 1 some n^2 - m*4^k (k >= 0) is a sum of two squares:"
+          "  m in {2, 5} (Sun's 2-5 conjecture, A300510); m in {1, 2, 5} (A300448, Conjecture 1)")
+    d510 = [0, 1, 2, 1, 3, 3, 3, 1, 4, 4, 5, 3, 5, 4, 6, 1, 3, 4, 5, 4, 7, 6, 5, 3, 8, 6, 6, 4, 5, 7, 7, 1, 5, 4, 11, 4,
+            7, 5, 6, 4, 6, 8, 5, 6, 12, 5, 5, 3, 6, 9, 8, 6, 7, 6, 10, 4, 7, 7, 6, 7, 5, 9, 9, 1, 8, 5, 10, 4, 9, 11,
+            9, 4, 11, 7, 12, 5, 8, 7, 7, 4]
+    d448 = [1, 2, 4, 2, 4, 5, 4, 2, 7, 5, 6, 5, 6, 5, 5, 2, 5, 7, 6, 5, 10, 7, 5, 5, 7, 7, 6, 5, 6, 6, 7, 2, 10, 6, 8, 7,
+            7, 6, 6, 5, 7, 11, 5, 7, 10, 5, 6, 5, 8, 8, 9, 7, 8, 6, 6, 5, 10, 7, 5, 6, 5, 8, 7, 2, 5, 10, 8, 6, 10, 8,
+            7, 7, 11, 7, 7, 6, 10, 7, 5, 5]
+    same = ([sum(ways_x_le_y(v) for v in sq_values(n, (2, 5))) for n in range(1, 81)] == d510
+            and [sum(1 for v in sq_values(n, (1, 2, 5)) if ways_x_le_y(v)) for n in range(1, 81)] == d448)
+    OK &= same
+    print("%-4s plain search reproduces the 80 terms a(1..80) of A300510 and of A300448 given in the OEIS" % ("PASS" if same else "FAIL"))
+    same = ([sum(ways_from_factors(v) for v in sq_values(n, (2, 5))) for n in range(1, 81)] == d510
+            and [count_sq(n, (1, 2, 5))[0] for n in range(1, 81)] == d448)
+    OK &= same
+    print("%-4s the prime criterion (by factoring) reproduces the same 160 terms" % ("PASS" if same else "FAIL"))
+    top = 2001 if QUICK else 20001
+    zeros = [n for n in range(2, top + 1) if not any(represented(v) for v in sq_values(n, (2, 5)))]
+    good = zeros == []
+    OK &= good
+    print("%-4s 1 < n <= %d with no representation for m in {2, 5}: %s" % ("PASS" if good else "FAIL", top, zeros))
+    n0 = 80397893435
+    rows = check_cert_squares(n0, (2, 5), "certificates/A300510_n%d.csv" % n0)
+    print("PASS certificate (n = %d, m in {2, 5}): each of the %d numbers n^2 - m*4^k has a divisor d == 3 (mod 4) coprime to its cofactor" % (n0, rows))
+    rows = check_cert_squares(n0, (1, 2, 5), "certificates/A300448_conj1_n%d.csv" % n0)
+    print("PASS certificate (n = %d, m in {1, 2, 5}): each of the %d numbers n^2 - m*4^k has a divisor d == 3 (mod 4) coprime to its cofactor" % (n0, rows))
+    g, tot = count_sq(n0, (2, 5))
+    report("A300510 (recount by factoring)", n0, g, extra="of %d numbers n^2 - m*4^k" % tot)
+    g, tot = count_sq(n0, (1, 2, 5))
+    report("A300448 Conj.1 (recount)", n0, g, extra="of %d numbers n^2 - m*4^k" % tot)
+    n2 = 239694783
+    rows = check_cert_squares(n2, (1, 5, 17), "certificates/A300448_conj2_n%d.csv" % n2)
+    print("PASS certificate (n = %d, m in {1, 5, 17}): each of the %d numbers n^2 - m*4^k has a divisor d == 3 (mod 4) coprime to its cofactor" % (n2, rows))
+    g, tot = count_sq(n2, (1, 5, 17))
+    report("A300448 Conj.2 (recount)", n2, g, extra="of %d numbers n^2 - m*4^k" % tot)
+    for M, e in ((n2 - 2, 17), (n2 + 2, 25)):
+        g, tot = count_sq(M, (1, 5, 17))
+        good = (g, tot) == (e, 81)
+        OK &= good
+        print("%-4s   control (neighbour)                n = %-13d sums of two squares: %d of %d" % ("PASS" if good else "FAIL", M, g, tot), flush=True)
+    zeros = [n for n in range(1, top + 1) if not any(represented(v) for v in sq_values(n, (1, 5, 17)))]
+    good = zeros == []
+    OK &= good
+    print("%-4s 0 < n <= %d with no representation for m in {1, 5, 17}: %s" % ("PASS" if good else "FAIL", top, zeros))
+    for M, e25, e125, a510 in ((n0 - 2, 19, 27, 47), (n0 + 2, 18, 22, 39)):
+        got = (count_sq(M, (2, 5))[0], count_sq(M, (1, 2, 5))[0], sum(ways_from_factors(v) for v in sq_values(M, (2, 5))))
+        good = got == (e25, e125, a510)
+        OK &= good
+        print("%-4s   control (neighbour)                n = %-13d sums of two squares: %d of 72 and %d of 109; A300510(n) = %d"
+              % (("PASS" if good else "FAIL", M) + got), flush=True)
+    for n3, tot3, ctl in ((68136270467, 104, ((-2, 21), (2, 26))), (80570407837, 107, ((-2, 19), (2, 20)))):
+        rows = check_cert_squares(n3, (1, 5, 65), "certificates/A300448_conj3_n%d.csv" % n3)
+        print("PASS certificate (n = %d, m in {1, 5, 65}): each of the %d numbers n^2 - m*4^k has a divisor d == 3 (mod 4) coprime to its cofactor" % (n3, rows))
+        g, tot = count_sq(n3, (1, 5, 65))
+        OK &= tot == tot3
+        report("A300448 Conj.3 (recount)", n3, g, extra="of %d numbers n^2 - m*4^k" % tot)
+        for dlt, e in ctl:
+            g, tot = count_sq(n3 + dlt, (1, 5, 65))
+            good = (g, tot) == (e, tot3)
+            OK &= good
+            print("%-4s   control (neighbour)                n = %-13d sums of two squares: %d of %d" % ("PASS" if good else "FAIL", n3 + dlt, g, tot), flush=True)
+    zeros = [n for n in range(1, top + 1) if not any(represented(v) for v in sq_values(n, (1, 5, 65)))]
+    good = zeros == []
+    OK &= good
+    print("%-4s 0 < n <= %d with no representation for m in {1, 5, 65}: %s" % ("PASS" if good else "FAIL", top, zeros))
+
+    print("A301452  for every n > 1 some n^2 - 2*4^k or n^2 - 3*4^k (k >= 0) is of the form x^2 + 2y^2  (Sun's 2-3 conjecture)")
+    d452 = [0, 2, 2, 2, 2, 5, 3, 2, 4, 4, 4, 5, 5, 5, 6, 2, 4, 6, 5, 4, 9, 5, 4, 5, 5, 7, 10, 5, 6, 7, 8, 2, 6, 6, 7, 6,
+            9, 7, 10, 4, 6, 12, 3, 5, 10, 5, 6, 5, 5, 8, 9, 7, 7, 12, 5, 5, 13, 9, 6, 7, 8, 10, 13, 2, 6, 8, 10, 6, 15,
+            9, 9, 6, 10, 9, 12, 7, 8, 13, 6, 4]
+    same = [sum(ways_x2_2y2(v) for v in sq_values(n, (2, 3))) for n in range(1, 81)] == d452
+    OK &= same
+    print("%-4s plain search reproduces the 80 terms a(1..80) of A301452 given in the OEIS" % ("PASS" if same else "FAIL"))
+    same = all((ways_x2_2y2(v) > 0) == represented(v, 2) for n in range(1, 201) for v in sq_values(n, (2, 3)))
+    OK &= same
+    print("%-4s the prime criterion (by factoring) agrees with plain search for all n^2 - m*4^k with n <= 200" % ("PASS" if same else "FAIL"))
+    zeros = [n for n in range(2, top + 1) if not any(represented(v, 2) for v in sq_values(n, (2, 3)))]
+    good = zeros == []
+    OK &= good
+    print("%-4s 1 < n <= %d with no representation for m in {2, 3}: %s" % ("PASS" if good else "FAIL", top, zeros))
+    for n4 in (386749710995, 985224034231, 1241790594939, 1572550146081, 9224999068015):
+        rows = check_cert_squares(n4, (2, 3), "certificates/A301452_n%d.csv" % n4, 2)
+        print("PASS certificate (n = %d, m in {2, 3}): each of the %d numbers n^2 - m*4^k has a divisor d == 5 or 7 (mod 8) coprime to its cofactor" % (n4, rows))
+        if n4 * n4 < 33 * 10 ** 23:             # the range in which is_prime, used by the factoring, is proven
+            g, tot = count_sq(n4, (2, 3), 2)
+            report("A301452 (recount by factoring)", n4, g, extra="of %d numbers n^2 - m*4^k" % tot)
+    for M, e in ((386749710993, 17), (386749710997, 16)):
+        g, tot = count_sq(M, (2, 3), 2)
+        good = (g, tot) == (e, 76)
+        OK &= good
+        print("%-4s   control (neighbour)                n = %-13d of the form x^2 + 2y^2: %d of %d" % ("PASS" if good else "FAIL", M, g, tot), flush=True)
+
+    print("Published failures of the same kind, re-checked: m in {2, c} for c = 29, 65, 113 (Q.-H. Hou) and c = 162 (Sun);"
+          " m in {1, 5, 11} (Sun); Sun's counterexample to his Square Conjecture A301471 (n^2 - 3*2^k = x^2 + 2y^2)")
+    for c, M in ((29, 51883659), (65, 56173837), (113, 65525725), (162, 42211965)):
+        g, tot = count_sq(M, (2, c))
+        report("m in {2, %d}" % c, M, g, extra="of %d numbers" % tot)
+    g, tot = count_sq(13018247, (1, 5, 11))
+    report("m in {1, 5, 11}", 13018247, g, extra="of %d numbers" % tot)
+    g, tot = count_sq(5884015571, (3, 6), 2)
+    report("A301471 (x^2 + 2y^2, 3*2^k)", 5884015571, g, extra="of %d numbers" % tot)
 
     A302984 = [4375339279, 6285378879, 8525602079, 9731038079, 13523100479, 24920030079, 29312698479,
                30034054079, 32269674879, 40072842719, 51729946479, 58532818879, 67179857279, 71235478079,

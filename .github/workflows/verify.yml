@@ -18,6 +18,11 @@ jobs:
       - run: for N in 68211369278 273299806988; do python check_cert_a303932.py $N certificates/A303932_conj2_N$N.csv nr; done
       - run: for N in 257558146370 749360555468 799324864730; do python check_cert_a303932.py $N certificates/A303932_conj1_N$N.csv qr; done
       - run: python check_cert_a157242.py certificates/A157242_N107576474238337.csv
+      - run: python check_cert_a300510.py certificates/A300510_n80397893435.csv
+      - run: python check_cert_a300510.py certificates/A300448_conj1_n80397893435.csv 1 1,2,5 80397893435
+      - run: python check_cert_a300510.py certificates/A300448_conj2_n239694783.csv 1 1,5,17 239694783
+      - run: for N in 68136270467 80570407837; do python check_cert_a300510.py certificates/A300448_conj3_n$N.csv 1 1,5,65 $N; done
+      - run: for N in 386749710995 985224034231 1241790594939 1572550146081 9224999068015; do python check_cert_a300510.py certificates/A301452_n$N.csv 2 2,3 $N; done
 
   lean:
     name: Check the Lean proofs (A157242 and A303932, Conjecture 2)

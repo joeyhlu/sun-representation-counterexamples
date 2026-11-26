@@ -6,7 +6,7 @@ contributor's signature and date (`~~~~`).
 ## A157242
 
 ```
-The conjecture is false: a(53788237119169) = 0, that is, the odd number 107576474238337 = 13*43*2129*7411*12197 is not of the form p + 2^x + 11*2^y with p a prime congruent to 5 mod 6 and x, y positive integers. Among the 1974 pairs (x,y) with 2^x + 11*2^y < 107576474238337, p = 107576474238337 - 2^x - 11*2^y is congruent to 5 mod 6 exactly for the 504 pairs with x even and y odd, and all 504 values are composite. There is no other counterexample below 10^13 (this agrees with D. S. McNeil's verification up to 10^13 reported in Sun's message to the Number Theory List of Feb 28 2009). - ~~~~
+The conjecture is false: a(53788237119169) = 0, that is, the odd number 107576474238337 = 13*43*2129*7411*12197 is not of the form p + 2^x + 11*2^y with p a prime congruent to 5 mod 6 and x, y positive integers. Among the 1974 pairs (x,y) with 2^x + 11*2^y < 107576474238337, p = 107576474238337 - 2^x - 11*2^y is congruent to 5 mod 6 exactly for the 504 pairs with x even and y odd, and all 504 values are composite. This is the least counterexample: a test of every odd number below 107576474238337 found no other exception beyond 33, 39, 45, 171, 247 (up to 10^13 this agrees with D. S. McNeil's verification reported in Sun's message to the Number Theory List of Feb 28 2009). - ~~~~
 ```
 
 Suggested LINKS line:
@@ -15,9 +15,46 @@ Suggested LINKS line:
 Zhi-Wei Sun, <a href="https://listserv.nodak.edu/cgi-bin/wa.exe?A2=NMBRTHRY;20d0ba9.0902">A curious conjecture about p+2^x+11*2^y</a>, Number Theory List, Feb 25 2009.
 ```
 
-Whether 107576474238337 is the least counterexample is not settled in the comment above; add
-that only once the test of all odd numbers between 10^13 and 107576474238337 has finished
-(see the README).
+The test of all odd numbers between 10^13 and 107576474238337 finished on 26 November 2026
+and found no other exception (see the README), so the comment says "least".
+
+## A300510
+
+```
+The conjecture is false: a(80397893435) = 0. For n = 80397893435 = 5*1163*1237*11177 and each k = 0..35, both n^2 - 2*4^k and n^2 - 5*4^k have a prime factor congruent to 3 mod 4 with odd exponent, so neither is a sum of two squares. This n was found by a search that is not exhaustive between 6*10^9 and 10^11, so it need not be the least counterexample. - ~~~~
+```
+
+Suggested LINKS line:
+
+```
+Zhi-Wei Sun, <a href="https://mathoverflow.net/questions/356905">Write n^2 as x^2+y^2+2*4^z or x^2+y^2+5*4^z</a>, MathOverflow, April 2020.
+```
+
+## A300448
+
+```
+Conjecture 1 is false: a(80397893435) = 0. For n = 80397893435 and each admissible k, the numbers n^2 - 4^k (k = 0..36), n^2 - 2*4^k and n^2 - 5*4^k (k = 0..35) all have a prime factor congruent to 3 mod 4 with odd exponent. - ~~~~
+```
+
+```
+Conjecture 2 is false: the square of 239694783 = 3*47*179*9497 cannot be written as 4^k*m + x^2 + y^2 with k, x, y nonnegative integers and m among 1, 5, 17. This is the least positive integer with that property. - ~~~~
+```
+
+```
+Conjecture 3 is false: the squares of 68136270467 = 103*661517189 and of the prime 80570407837 cannot be written as 4^k*m + x^2 + y^2 with k, x, y nonnegative integers and m among 1, 5, 65. These numbers were found by a search that is not exhaustive, so 68136270467 need not be the least such number. - ~~~~
+```
+
+## A301452
+
+```
+The 2-3 conjecture is false: a(386749710995) = 0. For n = 386749710995 = 5*77349942199 and each k = 0..37, both n^2 - 2*4^k and n^2 - 3*4^k have a prime factor congruent to 5 or 7 mod 8 with odd exponent, so neither is of the form x^2 + 2*y^2. Also a(n) = 0 for n = 985224034231, 1241790594939, 1572550146081, 9224999068015. These n were found by a search that is not exhaustive, so 386749710995 need not be the least counterexample. - ~~~~
+```
+
+Suggested LINKS line:
+
+```
+Zhi-Wei Sun, <a href="https://mathoverflow.net/questions/356905">Write n^2 as x^2+y^2+2*4^z or x^2+y^2+5*4^z</a>, MathOverflow, April 2020.
+```
 
 ## A157237
 

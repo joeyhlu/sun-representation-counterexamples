@@ -7,6 +7,7 @@ gcc -O3 -march=native -fopenmp -o mixsum2 mixsum2.c -lm
 gcc -O3 -march=native -fopenmp -o direct_scan direct_scan.c -lm
 gcc -O3 -march=native -fopenmp -o sunmix_multi sunmix_multi.c -lm
 gcc -O3 -march=native -fopenmp -o suntarget2 suntarget2.c -lm
+gcc -O2 -march=native -fopenmp -o sqsparse sqsparse.c -lm
 python specs.py write specs          # writes the term lists used by mixsum2
 ```
 
@@ -100,3 +101,37 @@ it tests exactly the N for which so few candidates survive the primes 23 to 1021
 estimated probability of all of them being composite reaches the threshold. A number is
 reported only after the complete test over all pairs (x, y), so what it reports is correct,
 but a number it does not report may still be an exception.
+
+## sqsparse: odd n with no n² − m·4^k represented by x² + y² or x² + 2y²
+
+```
+./sqsparse scan 1 2,5 6e9 1e11 12                   # A300510: found 80397893435 (about 15 minutes on 16 threads)
+./sqsparse one  1 2,5 80397893435                   # every pair (m, k) with a witness
+./sqsparse one  1 1,2,5 80397893435                 # the same for A300448, Conjecture 1
+./sqsparse scan 1 2,29 3 7e7 200                    # every odd n decided: only 51883659
+./sqsparse scan 1 1,5,17 3 239694785 200            # A300448 Conjecture 2, every odd n decided: only 239694783
+./sqsparse scan 2 3,6 3 6e9 14                      # Square Conjecture (3*2^k = 3*4^j or 6*4^j): only 5884015571
+./sqsparse scan 1 1,5,65 2e7 1e11 14                # A300448 Conjecture 3: found 68136270467 and 80570407837
+./sqsparse cls  2 2,3 1e11 1e12 13 7,13,23,31,37 -14  # A301452 in the best residue classes: found 386749710995 and 985224034231
+./sqsparse one  2 2,3 386749710995                  # every pair (m, k) with a witness
+```
+
+Arguments of `scan`: the form (1 for x² + y², 2 for x² + 2y²), the list of multipliers m, the
+range [NLO, NHI) of n, the limit T, and optionally the number of threads and the sieve bound
+(default 65536). Only odd n are examined: if an even n has no representation, then neither
+has n/2.
+
+How it works. Call a prime bad if it must divide a represented number to an even power
+(q ≡ 3 mod 4 for x² + y², q ≡ 5, 7 mod 8 for x² + 2y²). Stage 1 sieves blocks of odd n with the
+bad primes up to the bound: q divides n² − m·4^k exactly when n ≡ ±s·2^k (mod q) with s² ≡ m,
+so each residue class of n modulo q strikes a fixed set of pairs (m, k), kept as a bit mask.
+Stage 2 takes the n with at most T pairs not struck and decides those pairs exactly (trial
+division, strong probable prime tests, Pollard's rho) until one is represented. If none is,
+all pairs of that n are decided exactly, because the sieve also strikes a pair when q² divides
+the number. Only an n that fails this complete test is printed (`NOREP n`).
+
+With T at least the number of pairs (for example 200) every odd n is decided, and the run is
+exhaustive. With a smaller T the run is not exhaustive: an n with more than T pairs left is
+skipped. `cls` restricts the sieve further, to the residue classes of n modulo a product of
+small bad primes in which those primes alone leave the fewest pairs; `stats` prints, for the
+n with at most T pairs left, how many of those pairs are represented.
