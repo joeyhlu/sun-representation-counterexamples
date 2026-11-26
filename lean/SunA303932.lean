@@ -121,12 +121,24 @@ theorem key : ∀ k, k < 36 → ∀ m, m < 23 →
     (rt k m * rt k m) % (N₀ - (2 ^ k + 3 ^ m)) = 11 % (N₀ - (2 ^ k + 3 ^ m)) := by
   decide +kernel
 
+theorem two_pow_pos (k : Nat) : 0 < 2 ^ k := by
+  induction k with
+  | zero => decide
+  | succ n ih => rw [Nat.pow_succ]; exact Nat.mul_pos ih (by decide)
+
+theorem three_pow_pos (m : Nat) : 0 < 3 ^ m := by
+  induction m with
+  | zero => decide
+  | succ n ih => rw [Nat.pow_succ]; exact Nat.mul_pos ih (by decide)
+
 /-- `N₀` is not of the form `p + 2^k + 3^m` with `p` prime and 11 a non-residue modulo `p`. -/
 theorem not_representable : ¬ Representable N₀ := by
   intro h
   rcases h with ⟨p, k, m, hp, hnr, hN⟩
   have hN₀ : N₀ = 68211369278 := rfl
   have hp2 : 2 ≤ p := hp.1
+  have h2pos : 0 < 2 ^ k := two_pow_pos k
+  have h3pos : 0 < 3 ^ m := three_pow_pos m
   have hk : k < 36 := by
     cases Nat.lt_or_ge k 36 with
     | inl h => exact h
